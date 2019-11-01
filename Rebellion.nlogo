@@ -2,6 +2,8 @@ breed [ agents an-agent ]
 breed [ cops cop ]
 
 globals [
+  exp_id              ; experiment id
+  howlong?            ; howlong it be L be zeor
   k                   ; factor for determining arrest probability
   threshold           ; by how much must G > N to make someone rebel?
 ]
@@ -11,7 +13,6 @@ agents-own [
   perceived-hardship  ; H, also ranging from 0-1 (inclusive)
   active?             ; if true, then the agent is actively rebelling
   jail-term           ; how many turns in jail remain? (if 0, the agent is not in jail)
-
 ]
 
 cops-own [
@@ -24,6 +25,8 @@ patches-own [
 
 to setup
   clear-all
+  set howlong? -1
+  set government-legitimacy 0.9
 
   ; set globals
   set k 2.3
@@ -65,6 +68,45 @@ to setup
   reset-ticks
 end
 
+to linear-down
+  ifelse government-legitimacy < 0.001
+  [set government-legitimacy 0]
+  [set government-legitimacy government-legitimacy - 0.001]
+end
+
+to step-down
+  if ticks mod (period * max-jail-term) = 0
+  [
+    ifelse government-legitimacy < 0.1
+    [ set government-legitimacy 0]
+    [ set government-legitimacy government-legitimacy - 0.1]
+  ]
+end
+
+to half-down
+  if ticks mod (period * max-jail-term) = 0
+  [
+    set government-legitimacy government-legitimacy * 0.5
+  ]
+end
+
+to top-down
+  if ticks mod (period * max-jail-term) = 0
+  [
+    set government-legitimacy 0
+  ]
+end
+
+
+to government-legitimacy-decay
+  if government-legitimacy-decay-method = "linear-down" [linear-down]
+  if government-legitimacy-decay-method = "step-down" [step-down]
+  if government-legitimacy-decay-method = "half-down" [half-down]
+  if government-legitimacy-decay-method = "top-down" [top-down]
+  if (government-legitimacy <= 1e-6) and (howlong? < 0)
+  [set howlong? 0]
+end
+
 to go
   ask turtles [
     ; Rule M: Move to a random site within your vision
@@ -81,7 +123,16 @@ to go
   ask cops [ display-cop ]
   ; advance clock and update plots
   tick
-  print ticks
+  ;print ticks
+  government-legitimacy-decay
+  if howlong? >= 0
+  [set howlong? howlong? + 1]
+  if (howlong? >= period * max-jail-term) or (ticks > 3000)
+  [
+    stop
+    export-plot"All agent types" (word "plot" exp_id ".csv")
+  ]
+
 end
 
 ; AGENT AND COP BEHAVIOR
@@ -166,6 +217,16 @@ to display-cop
     [ set shape "person soldier" ]
 end
 
+to run-trails
+  set exp_id 0
+  while [exp_id < trails_per_setting]
+  [
+    set exp_id exp_id + 1
+    setup
+    go
+  ]
+end
+
 
 ; Copyright 2004 Uri Wilensky.
 ; See Info tab for full copyright and license.
@@ -240,7 +301,7 @@ government-legitimacy
 government-legitimacy
 0.0
 1.0
-0.82
+0.9
 0.01
 1
 NIL
@@ -363,9 +424,9 @@ HORIZONTAL
 
 MONITOR
 11
-351
+344
 93
-396
+389
 # of agents
 count agents
 3
@@ -479,6 +540,68 @@ MONITOR
 319
 undercover cops (yellow)
 count cops with [undercover?]
+17
+1
+11
+
+SLIDER
+692
+624
+864
+657
+trails_per_setting
+trails_per_setting
+1
+100
+10.0
+1
+1
+NIL
+HORIZONTAL
+
+CHOOSER
+435
+554
+669
+599
+government-legitimacy-decay-method
+government-legitimacy-decay-method
+"none" "linear-down" "half-down" "step-down" "top-down"
+4
+
+SLIDER
+691
+562
+863
+595
+period
+period
+1
+10
+3.0
+1
+1
+NIL
+HORIZONTAL
+
+MONITOR
+9
+478
+165
+523
+ticks after L become 0
+howlong?
+17
+1
+11
+
+MONITOR
+887
+619
+944
+664
+exp_id
+exp_id
 17
 1
 11
