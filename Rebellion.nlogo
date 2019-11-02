@@ -2,7 +2,8 @@ breed [ agents an-agent ]
 breed [ cops cop ]
 
 globals [
-  exp_id              ; experiment id
+  file-name           ; file-name to save plot
+  file-name-l
   howlong?            ; howlong it be L be zeor
   k                   ; factor for determining arrest probability
   threshold           ; by how much must G > N to make someone rebel?
@@ -23,10 +24,15 @@ patches-own [
   neighborhood        ; surrounding patches within the vision radius
 ]
 
+to reset-L
+  set government-legitimacy 0.8
+  set file-name (word file-prefix "0.csv")
+  set file-name-l (word file-prefix "0_L.csv")
+end
+
 to setup
   clear-all
   set howlong? -1
-  set government-legitimacy 0.9
 
   ; set globals
   set k 2.3
@@ -66,6 +72,7 @@ to setup
 
   ; start clock and plot initial state of system
   reset-ticks
+  reset-L
 end
 
 to linear-down
@@ -107,6 +114,10 @@ to government-legitimacy-decay
   [set howlong? 0]
 end
 
+to-report stop-condition []
+  report (howlong? >= period * max-jail-term) or (ticks > 3000)
+end
+
 to go
   ask turtles [
     ; Rule M: Move to a random site within your vision
@@ -127,12 +138,13 @@ to go
   government-legitimacy-decay
   if howlong? >= 0
   [set howlong? howlong? + 1]
-  if (howlong? >= period * max-jail-term) or (ticks > 3000)
+  if stop-condition
   [
+    ;export-plot "All agent types" (word "plot" exp_id ".csv")
+    export-plot "All agent types" file-name
+    export-plot "L Plot" file-name-l
     stop
-    export-plot"All agent types" (word "plot" exp_id ".csv")
   ]
-
 end
 
 ; AGENT AND COP BEHAVIOR
@@ -218,15 +230,17 @@ to display-cop
 end
 
 to run-trails
-  set exp_id 0
+  let exp_id 0
   while [exp_id < trails_per_setting]
   [
     set exp_id exp_id + 1
     setup
+    set file-name (word file-prefix exp_id ".csv")
+    set file-name-l (word file-prefix exp_id "_L.csv")
     go
+    while [not stop-condition] [go]
   ]
 end
-
 
 ; Copyright 2004 Uri Wilensky.
 ; See Info tab for full copyright and license.
@@ -301,7 +315,7 @@ government-legitimacy
 government-legitimacy
 0.0
 1.0
-0.9
+0.8
 0.01
 1
 NIL
@@ -323,10 +337,10 @@ turns
 HORIZONTAL
 
 MONITOR
-210
-410
-300
-455
+208
+391
+351
+436
 active (red)
 count agents with [active?]
 3
@@ -342,17 +356,17 @@ vision
 vision
 0.0
 10.0
-4.0
+7.0
 .1
 1
 patches
 HORIZONTAL
 
 MONITOR
-115
-410
-205
-455
+207
+332
+350
+377
 jailed (black)
 count agents with [jail-term > 0]
 1
@@ -375,10 +389,10 @@ initial-cop-density
 HORIZONTAL
 
 MONITOR
-10
-410
-110
-455
+206
+270
+350
+315
 quiet (green)
 count agents with [not active? and jail-term = 0]
 1
@@ -399,7 +413,7 @@ movement?
 MONITOR
 9
 213
-92
+151
 258
 # of cops
 count cops
@@ -423,10 +437,10 @@ initial-agent-density
 HORIZONTAL
 
 MONITOR
-11
-344
-93
-389
+206
+211
+350
+256
 # of agents
 count agents
 3
@@ -464,10 +478,10 @@ Initial settings
 0
 
 BUTTON
-432
-492
-526
-525
+565
+623
+659
+656
 watch one
 set visualization \"3D\"\nask max-one-of agents [grievance]\n  [ set size 2 watch-me ]
 NIL
@@ -478,16 +492,6 @@ NIL
 NIL
 NIL
 NIL
-0
-
-CHOOSER
-575
-479
-713
-524
-visualization
-visualization
-"2D" "3D"
 0
 
 BUTTON
@@ -525,7 +529,7 @@ HORIZONTAL
 MONITOR
 8
 274
-144
+149
 319
 normal cops (cyan)
 count cops with [not undercover?]
@@ -534,10 +538,10 @@ count cops with [not undercover?]
 11
 
 MONITOR
-146
-274
-298
-319
+9
+332
+149
+377
 undercover cops (yellow)
 count cops with [undercover?]
 17
@@ -545,10 +549,10 @@ count cops with [undercover?]
 11
 
 SLIDER
-692
-624
-864
-657
+387
+488
+559
+521
 trails_per_setting
 trails_per_setting
 1
@@ -560,20 +564,20 @@ NIL
 HORIZONTAL
 
 CHOOSER
-435
-554
-669
-599
+812
+429
+1017
+474
 government-legitimacy-decay-method
 government-legitimacy-decay-method
 "none" "linear-down" "half-down" "step-down" "top-down"
-4
+3
 
 SLIDER
-691
-562
-863
-595
+817
+486
+989
+519
 period
 period
 1
@@ -586,25 +590,92 @@ HORIZONTAL
 
 MONITOR
 9
-478
-165
-523
+390
+151
+435
 ticks after L become 0
 howlong?
 17
 1
 11
 
+INPUTBOX
+387
+534
+503
+594
+file-prefix
+plot
+1
+0
+String
+
+BUTTON
+678
+489
+759
+522
+NIL
+run-trails
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
 MONITOR
-887
-619
-944
-664
-exp_id
-exp_id
+518
+543
+653
+588
+NIL
+file-name
 17
 1
 11
+
+PLOT
+15
+448
+351
+598
+L plot
+time
+L
+0.0
+10.0
+0.0
+100.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot government-legitimacy * 100"
+
+MONITOR
+667
+545
+820
+590
+NIL
+file-name-l
+17
+1
+11
+
+CHOOSER
+391
+615
+529
+660
+visualization
+visualization
+"2D" "3D"
+0
 
 @#$#@#$#@
 ## WHAT IS IT?
