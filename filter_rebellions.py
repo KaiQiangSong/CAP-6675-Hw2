@@ -16,14 +16,14 @@ def calc_int_pct(frac, total):
 def in_rebellion(active, total):
   return calc_int_pct(active, total) >= 10
 
-if __name__ == '__main__':
+def filter_raw_netlogo(raw_csv_input, filtered_csv_output):
   filter_results = []
   reader_state = WAITFOR_CSV_HEADER_STATE
-  raw_reader = csv.reader(sys.stdin, delimiter=',', quotechar='"')
+  raw_reader = csv.reader(raw_csv_input, delimiter=',', quotechar='"')
   initial_agent_count = 0
   rebellion_start_tick = 0
   rebellion_agent_count = 0
-  for row_idx, row in enumerate(raw_reader):
+  for row in raw_reader:
     if len(row) != 12:
       # Bad row?
       continue
@@ -57,7 +57,10 @@ if __name__ == '__main__':
         reader_state = WAITFOR_REBELLION_START_STATE
       else:
         rebellion_agent_count += active_agent_count
-  csv.writer(sys.stdout, delimiter=',').writerows(filter_results)
+  csv.writer(filtered_csv_output, delimiter=',').writerows(filter_results)
+
+if __name__ == '__main__':
+  filter_raw_netlogo(sys.stdin, sys.stdout)
   exit(0)
 
 # vim: set ts=2 sw=2 expandtab:
