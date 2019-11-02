@@ -1,0 +1,7 @@
+root = true
+
+[*.{py,js,ts,json,tex,bib}]
+indent_size = 2
+
+[*]
+indent_style = space
