@@ -115,7 +115,7 @@ to government-legitimacy-decay
 end
 
 to-report stop-condition []
-  report (howlong? >= period * max-jail-term) or (ticks > 3000)
+  report (howlong? >= period * max-jail-term) or (ticks > 1000)
 end
 
 to go
@@ -520,7 +520,7 @@ undercover-ratio
 undercover-ratio
 0
 100
-20.0
+10.0
 1
 1
 %
@@ -571,7 +571,7 @@ CHOOSER
 government-legitimacy-decay-method
 government-legitimacy-decay-method
 "none" "linear-down" "half-down" "step-down" "top-down"
-3
+0
 
 SLIDER
 817
